@@ -11,7 +11,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 function startTranslation(apiKey, lang) {
-  if (translating || !apiKey) return;
+  if (translating) return;
+  if (!apiKey) {
+    console.warn('Manga Translator: API key vacía — introduce tu clave en el popup.');
+    return;
+  }
   translating = true;
 
   injectStyles();
@@ -77,7 +81,7 @@ async function translateVisibleImages(apiKey, lang) {
     .filter(img => {
       const w = img.naturalWidth || img.width;
       const h = img.naturalHeight || img.height;
-      const src = img.src.toLowerCase();
+      const src = (img.src || '').toLowerCase();
       return w > 400 && h > 600 && (
         src.includes('manga') || src.includes('chapter') || 
         src.includes('page') || src.includes('img')
@@ -94,30 +98,44 @@ async function translateVisibleImages(apiKey, lang) {
 }
 
 async function translateImage(img, apiKey, lang) {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  ctx.drawImage(img, 0, 0);
-  const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
-
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
+    const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    console.log('Manga Translator: enviando imagen a Gemini', { endpoint, imgSrc: img.src });
+
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [
-          { text: `Detecta y traduce TODO el texto de este manga al ${lang}. Responde SOLO con JSON válido:\n[{ "translated_text": "...", "coordinates": { "top": 10, "left": 20, "width": 15, "height": 5 } }]` },
+          { text: `Detecta y traduce TODO el texto de este manga al ${lang}. Responde SOLO con JSON válido:\n[{ "translated_text": "...", "coordinates": { "top": 10, "left": 20, "width": 15, "height": 8 } }, ...]` },
           { inline_data: { mime_type: "image/jpeg", data: base64 } }
         ]}],
         generationConfig: { response_mime_type: "application/json", temperature: 0.2 }
       })
     });
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      const t = await res.text();
+      console.error('Generative API error', res.status, res.statusText, t);
+      return;
+    }
     const data = await res.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text || '[]';
-    const translations = JSON.parse(text);
+    console.log('Generative API response', data);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    let translations = [];
+    try {
+      translations = JSON.parse(text);
+    } catch (e) {
+      console.error('Error parseando JSON de respuesta:', e, text);
+      return;
+    }
     addOverlays(img, translations);
   } catch (e) {
     console.warn("Error traduciendo:", e);
