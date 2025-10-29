@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Manga Translator Pro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Traduce manga automáticamente en cualquier web con IA Gemini",
   "icons": {
     "48": "icons/icon-48.png",
@@ -10,6 +10,7 @@
   "permissions": [
     "storage",
     "activeTab",
+    "tabs",
     "<all_urls>"
   ],
   "background": {
@@ -18,14 +19,22 @@
   },
   "browser_action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Manga Translator"
+    "default_title": "Manga Translator Pro",
+    "default_icon": {
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    }
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content/content.js"],
       "css": ["content/content.css"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": false
     }
+  ],
+  "web_accessible_resources": [
+    "debug/debug.html"
   ]
 }
