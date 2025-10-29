@@ -5,7 +5,8 @@ const langSelect = document.getElementById('lang');
 
 let isActive = false;
 
-chrome.storage.sync.get(['apiKey', 'lang', 'enabled'], (data) => {
+// Usar storage.local para evitar dependencia de Firefox Sync
+chrome.storage.local.get(['apiKey', 'lang', 'enabled'], (data) => {
   apiKeyInput.value = data.apiKey || '';
   langSelect.value = data.lang || 'Español';
   isActive = data.enabled || false;
@@ -13,17 +14,18 @@ chrome.storage.sync.get(['apiKey', 'lang', 'enabled'], (data) => {
 });
 
 apiKeyInput.addEventListener('input', () => {
-  chrome.storage.sync.set({ apiKey: apiKeyInput.value.trim() });
+  chrome.storage.local.set({ apiKey: apiKeyInput.value.trim() });
 });
 
 langSelect.addEventListener('change', () => {
-  chrome.storage.sync.set({ lang: langSelect.value });
+  chrome.storage.local.set({ lang: langSelect.value });
 });
 
 toggleBtn.addEventListener('click', async () => {
   isActive = !isActive;
-  chrome.storage.sync.set({ enabled: isActive });
+  chrome.storage.local.set({ enabled: isActive });
 
+  // Obtener la pestaña activa y enviar mensaje al content script
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   chrome.tabs.sendMessage(tab.id, {
     action: isActive ? 'start' : 'stop',
