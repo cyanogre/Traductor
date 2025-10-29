@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Manga Translator</title>
   <link rel="stylesheet" href="popup.css">
-  <!-- Quitar la carga remota de Tailwind para respetar CSP de extensiones -->
+  <!-- Quitar scripts remotos por CSP -->
 </head>
 <body class="bg-gray-900 text-white p-4 font-sans text-sm">
   <div class="w-64">
@@ -33,6 +33,13 @@
     </button>
 
     <p id="status" class="text-xs text-center mt-2 text-gray-400"></p>
+
+    <!-- Botón rápido para abrir la interfaz de diagnóstico -->
+    <div class="mt-3">
+      <button id="open-debug" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded transition text-sm">
+        Abrir Debug / Diagnóstico
+      </button>
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>
